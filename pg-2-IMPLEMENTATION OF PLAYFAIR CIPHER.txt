@@ -1,0 +1,133 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+void prepareKey(char key[], char preparedKey[]) {
+    int keyLen = strlen(key);
+    int used[26] = {0};
+    int index = 0;
+
+    for (int i = 0; i < keyLen; i++) {
+        char currentChar = toupper(key[i]);
+
+        if (!used[currentChar - 'A'] && currentChar != ' ') {
+            preparedKey[index++] = currentChar;
+            used[currentChar - 'A'] = 1;
+        }
+    }
+
+    for (char ch = 'A'; ch <= 'Z'; ch++) {
+        if (ch != 'J' && !used[ch - 'A']) {
+            preparedKey[index++] = ch;
+            used[ch - 'A'] = 1;
+        }
+    }
+
+    preparedKey[index] = '\0';
+}
+
+void initializeMatrix(char key[], char matrix[5][5]) {
+    char preparedKey[26];
+    prepareKey(key, preparedKey);
+
+    int index = 0;
+    
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            matrix[i][j] = preparedKey[index++];
+        }
+    }
+}
+
+void findPosition(char matrix[5][5], char ch, int *row, int *col) {
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            if (matrix[i][j] == ch) {
+                *row = i;
+                *col = j;
+                return;
+            }
+        }
+    }
+}
+
+void encryptPair(char matrix[5][5], char pair[2], char encryptedPair[2]) {
+    int row1, col1, row2, col2;
+    findPosition(matrix, pair[0], &row1, &col1);
+    findPosition(matrix, pair[1], &row2, &col2);
+
+    if (row1 == row2) {
+        encryptedPair[0] = matrix[row1][(col1 + 1) % 5];
+        encryptedPair[1] = matrix[row2][(col2 + 1) % 5];
+    }
+    else if (col1 == col2) {
+        encryptedPair[0] = matrix[(row1 + 1) % 5][col1];
+        encryptedPair[1] = matrix[(row2 + 1) % 5][col2];
+    }
+    else {
+        encryptedPair[0] = matrix[row1][col2];
+        encryptedPair[1] = matrix[row2][col1];
+    }
+}
+
+void playfairEncrypt(char key[], char modifiedPlaintext[], char ciphertext[]) {
+    char matrix[5][5];
+    initializeMatrix(key, matrix);
+
+    int len = strlen(modifiedPlaintext);
+    int index = 0;
+    
+    for (int i = 0; i < len; i += 2) {
+        char pair[2] = {toupper(modifiedPlaintext[i]),toupper(modifiedPlaintext[i+1])}; 
+        char encryptedPair[2];
+        
+        if (i + 1 < len && toupper(modifiedPlaintext[i]) == toupper(modifiedPlaintext[i + 1])) {
+            pair[1] = toupper(modifiedPlaintext[i + 1]);
+            i++; 
+        }
+        
+        encryptPair(matrix, pair, encryptedPair);
+        ciphertext[index++] = encryptedPair[0];
+        ciphertext[index++] = encryptedPair[1];
+    }
+
+    ciphertext[index] = '\0';
+}
+
+int main() {
+    char key[26];
+    char plaintext[100];
+    char ciphertext[100];
+
+    printf("Enter the key: ");
+    gets(key);
+
+    printf("Enter the plaintext: ");
+    gets(plaintext);
+
+    int len = strlen(plaintext);
+    char modifiedPlaintext[200];
+    int index = 0;
+
+    for (int i = 0; i < len; i++) {
+        modifiedPlaintext[index++] = toupper(plaintext[i]);
+        
+        if (i < len - 1 && toupper(plaintext[i]) == toupper(plaintext[i + 1])) {
+            if (i % 2 == 0) {
+                modifiedPlaintext[index++] = 'X';
+            }
+        }
+    }
+
+    if (index % 2 == 1) {
+        modifiedPlaintext[index++] = 'X';
+    }
+
+    modifiedPlaintext[index] = '\0';
+
+    playfairEncrypt(key, modifiedPlaintext, ciphertext);
+
+    printf("Original Message: %s\n", modifiedPlaintext);
+    printf("Encrypted Message: %s\n", ciphertext);
+	
+}
